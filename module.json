@@ -1,0 +1,20 @@
+{
+	"name": "spin-transition",
+	"title": "Scene Spin Transition",
+	"description": "Spin-transition your way between scenes!",
+	"version": "1.0.0",
+	"author": "cirrahn",
+	"keywords": [
+		"visuals"
+	],
+	"readme": "README.md",
+	"license": "MIT",
+	"manifest": "https://raw.githubusercontent.com/cirrahn/foundry-spin-transition/v1.0.0/module.json",
+	"download": "https://github.com/cirrahn/foundry-spin-transition/archive/v1.0.0.zip",
+	"minimumCoreVersion": "0.7.9",
+	"compatibleCoreVersion": "0.8.9",
+	"esmodules": [
+		"./js/SpinTransition.js"
+	],
+	"socket": true
+}
