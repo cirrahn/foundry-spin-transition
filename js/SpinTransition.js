@@ -29,17 +29,19 @@ class SpinTransition {
 				icon: `<i class="fas fa-fw fa-sync"></i>`,
 				condition: li => game.user.isGM && !game.scenes.get(li.data("sceneId")).data.active,
 				callback: async $li => {
+					const sceneId = $li.data("sceneId");
 					await this._doSocketSend(
 						{
 							type: "spin",
 							duration: game.settings.get(this._MODULE_ID, SpinTransition._SETTINGS_KEY_DURATION),
 							steps: game.settings.get(this._MODULE_ID, SpinTransition._SETTINGS_KEY_STEPS),
+							sceneId,
 						},
 						{
 							isRunOnSelf: true
 						}
 					);
-					const scene = game.scenes.get($li.data("sceneId"));
+					const scene = game.scenes.get(sceneId);
 					scene.activate().then(null);
 				},
 			};
@@ -91,11 +93,13 @@ class SpinTransition {
 		);
 	}
 
-	static async _doAnimateSpinIn ({duration, steps}) {
+	static async _doAnimateSpinIn ({duration, steps, sceneId}) {
 		this._pendingSpinOut = {duration, steps};
 		this._eleBoard.animate(this._getKeyframes({steps}), this._getAnimOptions({duration}));
+		const isSameScene = sceneId === canvas.scene?.id;
 		await this._doWaitForAnimation({duration});
 		this._eleBoard.style.transform = "scale(0.0001)";
+		if (isSameScene) await this._doAnimateSpinOut();
 	}
 
 	static async _doAnimateSpinOut () {
@@ -112,9 +116,9 @@ class SpinTransition {
 		if (isRunOnSelf) await this._doSocketReceive(evt);
 	}
 
-	static async _doSocketReceive ({type, duration, steps}) {
+	static async _doSocketReceive ({type, duration, steps, sceneId}) {
 		switch (type) {
-			case "spin": return this._doAnimateSpinIn({duration, steps});
+			case "spin": return this._doAnimateSpinIn({duration, steps, sceneId});
 		}
 	}
 
