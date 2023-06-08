@@ -1,0 +1,35 @@
+name: Create Release
+
+on:
+   push:
+      tags:
+         - 'v**'
+
+   workflow_dispatch:
+
+concurrency:
+   cancel-in-progress: true
+   group: "release"
+
+jobs:
+   build-and-deploy:
+      runs-on: ubuntu-latest
+      steps:
+         -  uses: actions/checkout@master
+
+         -  name: Build
+            run: |
+               npm i
+               npm run release
+
+         -  name: Zip
+            run: |
+               pushd dist/spin-transition
+               zip -r ../spin-transition.zip .
+               popd
+
+         -  name: Upload
+            run: |
+               hub release create -a dist/spin-transition.zip -a dist/spin-transition/module.json -m "${{ github.ref_name }}" ${{ github.ref_name }}
+            env:
+               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
