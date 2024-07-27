@@ -18,15 +18,15 @@ export class RollupManifestBuilder {
 						{
 							"name": "cirrahn",
 							"url": "https://www.patreon.com/cirrahn",
-							"discord": "Murray#3081",
+							"discord": "cirrahn",
 							"flags": {
 								"patreon": "cirrahn",
-								"github": "cirrahn"
-							}
-						}
+								"github": "cirrahn",
+							},
+						},
 					],
 					"keywords": [
-						"visuals"
+						"visuals",
 					],
 					"readme": "README.md",
 					"license": "MIT",
@@ -36,13 +36,13 @@ export class RollupManifestBuilder {
 
 					"compatibility": {
 						"minimum": "10",
-						"verified": "11.300"
+						"verified": "12.330",
 					},
 					"esmodules": [
-						"module.js"
+						"module.js",
 					],
-					"socket": true
-				}
+					"socket": true,
+				};
 
 				fs.mkdirSync(systemPath, {recursive: true});
 				fs.writeFileSync(path.join(systemPath, "module.json"), JSON.stringify(manifestJson, null, "\t"), "utf-8");

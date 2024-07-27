@@ -7,13 +7,13 @@ class SpinTransition {
 	static _eleBoard = null;
 	static _pendingSpinOut = null;
 
+	/* -------------------------------------------- */
+
 	static async init () {
 		this._initSocket();
 		this._initHooks();
 		this._initConfig();
-
-		// Re-render nav to add context option
-		if (ui.nav?.element) ui.nav.render();
+		this._initApi();
 
 		this._eleBoard = document.getElementById("board");
 	}
@@ -29,20 +29,7 @@ class SpinTransition {
 				icon: `<i class="fas fa-fw fa-sync"></i>`,
 				condition: li => game.user.isGM && !game.scenes.get(li.data("sceneId")).active,
 				callback: async $li => {
-					const sceneId = $li.data("sceneId");
-					await this._doSocketSend(
-						{
-							type: "spin",
-							duration: game.settings.get(this._MODULE_ID, SpinTransition._SETTINGS_KEY_DURATION),
-							steps: game.settings.get(this._MODULE_ID, SpinTransition._SETTINGS_KEY_STEPS),
-							sceneId,
-						},
-						{
-							isRunOnSelf: true,
-						},
-					);
-					const scene = game.scenes.get(sceneId);
-					scene.activate().then(null);
+					await this.doTransition({sceneId: $li.data("sceneId")});
 				},
 			};
 
@@ -61,7 +48,7 @@ class SpinTransition {
 			SpinTransition._SETTINGS_KEY_DURATION,
 			{
 				name: "Transition duration (ms)",
-				hint: "A description of the registered setting and its behavior.",
+				hint: "Duration of the spin transition, in milliseconds.",
 				scope: "world",
 				config: true,
 				type: Number,
@@ -93,6 +80,51 @@ class SpinTransition {
 		);
 	}
 
+	static _initApi () {
+		game.modules.get(this._MODULE_ID).api = {
+			transition ({sceneId, duration, steps}) {
+				return SpinTransition.doTransition({sceneId, duration, steps});
+			},
+		};
+	}
+
+	/* -------------------------------------------- */
+
+	static async doTransition ({sceneId, duration = null, steps = null}) {
+		const gmUserId = game.user.isGM ? null : this._doTransition_getGmId();
+		if (!game.user.isGM && !gmUserId) return ui.notifications.warn(`No active GM user!`);
+
+		await this._doSocketSend(
+			{
+				type: "spin",
+				duration: duration ?? game.settings.get(this._MODULE_ID, SpinTransition._SETTINGS_KEY_DURATION),
+				steps: steps ?? game.settings.get(this._MODULE_ID, SpinTransition._SETTINGS_KEY_STEPS),
+				sceneId,
+			},
+			{
+				isRunOnSelf: true,
+			},
+		);
+		const scene = game.scenes.get(sceneId);
+
+		if (game.user.isGM) return scene.activate();
+
+		await this._doSocketSend({
+			type: "gm-activate-scene",
+			userId: gmUserId,
+			sceneId,
+		});
+	}
+
+	static _doTransition_getGmId () {
+		// Use the first active GM in the list
+		const gmUserIds = game.users
+			.filter(user => user.active && user.isGM)
+			.map(user => user.id)
+			.sort();
+		return gmUserIds[0];
+	}
+
 	static async _doAnimateSpinIn ({duration, steps, sceneId}) {
 		this._pendingSpinOut = {duration, steps};
 		this._eleBoard.animate(this._getKeyframes({steps}), this._getAnimOptions({duration}));
@@ -116,9 +148,10 @@ class SpinTransition {
 		if (isRunOnSelf) await this._doSocketReceive(evt);
 	}
 
-	static async _doSocketReceive ({type, duration, steps, sceneId}) {
+	static async _doSocketReceive ({type, ...rest}) {
 		switch (type) {
-			case "spin": return this._doAnimateSpinIn({duration, steps, sceneId});
+			case "spin": return this._doAnimateSpinIn({...rest});
+			case "gm-activate-scene": return this._doGmActivateScene({...rest});
 		}
 	}
 
@@ -132,6 +165,12 @@ class SpinTransition {
 	static _getAnimOptions ({duration}) { return {duration, iterations: 1}; }
 
 	static async _doWaitForAnimation ({duration}) { await new Promise(resolve => setTimeout(() => resolve(), duration - 15)); }
+
+	static _doGmActivateScene ({userId, sceneId}) {
+		if (userId !== game.user.id) return;
+
+		game.scenes.get(sceneId).activate().then(null);
+	}
 }
 
 Hooks.on("ready", () => SpinTransition.init());

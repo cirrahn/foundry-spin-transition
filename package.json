@@ -8,12 +8,11 @@
 		"build": "cross-env NODE_ENV=development rollup --config rollup.config.js --watch",
 		"release": "cross-env NODE_ENV=production rollup --config rollup.config.js ",
 		"test": "npm run test:js",
-		"test:js": "eslint module/js foundry-path.js rollup.config.js",
+		"test:js": "eslint module/js foundry-path.js build/",
 		"lint:js": "npm run test:js -- --fix",
 		"lint": "npm run lint:js"
 	},
 	"devDependencies": {
-		"@league-of-foundry-developers/foundry-vtt-types": "^9.280.0",
 		"cross-env": "^7.0.3",
 		"eslint": "^8.42.0",
 		"rollup": "^3.24.0"
